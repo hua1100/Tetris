@@ -31,7 +31,17 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+Verify compliance with all 7 constitutional principles:
+
+- [ ] **Principle 1: Simplicity First** - Solution prioritizes clarity over cleverness, avoids unnecessary complexity
+- [ ] **Principle 2: Test-Driven Development** - TDD approach planned, tests will be written before implementation
+- [ ] **Principle 3: User Experience Focus** - Performance budgets defined (60 FPS, <16ms latency)
+- [ ] **Principle 4: Performance by Design** - Performance requirements specified, no premature optimization
+- [ ] **Principle 5: Maintainable Code** - Code structure emphasizes readability, follows style guide
+- [ ] **Principle 6: Intent-Driven Development** - Naming and structure will clearly express intent
+- [ ] **Principle 7: Observability & Structured Logging** - Logging strategy defined, ILogger<T> usage planned
+
+*If any checkbox cannot be checked, document violation in Complexity Tracking table below.*
 
 ## Project Structure
 
