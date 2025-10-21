@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>俄羅斯方塊 - Tetris</title>
+  <link rel="stylesheet" href="/src/styles/main.css">
+</head>
+<body>
+  <div class="game-container">
+    <div class="game-header">
+      <h1>俄羅斯方塊</h1>
+    </div>
+
+    <div class="game-content">
+      <!-- 主遊戲區域 -->
+      <div class="game-main">
+        <canvas id="game-canvas" width="300" height="600"></canvas>
+      </div>
+
+      <!-- 側邊欄（分數、下一個方塊等） -->
+      <div class="game-sidebar">
+        <div class="info-panel">
+          <h2>分數</h2>
+          <div id="score" class="score-value">0</div>
+        </div>
+
+        <div class="info-panel">
+          <h2>等級</h2>
+          <div id="level" class="level-value">1</div>
+        </div>
+
+        <div class="info-panel">
+          <h2>消除行數</h2>
+          <div id="lines" class="lines-value">0</div>
+        </div>
+
+        <div class="info-panel">
+          <h2>下一個方塊</h2>
+          <canvas id="next-piece-canvas" width="120" height="120"></canvas>
+        </div>
+
+        <div class="info-panel controls">
+          <h2>操作說明</h2>
+          <p>← → : 左右移動</p>
+          <p>↑ / W : 旋轉</p>
+          <p>↓ / S : 加速下落</p>
+          <p>空白鍵 : 硬降</p>
+          <p>P : 暫停</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="game-footer">
+      <button id="start-button" class="btn-primary">開始遊戲</button>
+      <button id="restart-button" class="btn-secondary" style="display: none;">重新開始</button>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
