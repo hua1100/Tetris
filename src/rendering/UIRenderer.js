@@ -17,6 +17,7 @@ export class UIRenderer {
     this.linesElement = document.getElementById('lines');
     this.nextPieceCanvas = document.getElementById('next-piece-canvas');
     this.statusElement = document.getElementById('status');
+    this.comboElement = document.getElementById('combo');
 
     // 初始化下一個方塊 canvas
     if (this.nextPieceCanvas) {
@@ -29,12 +30,15 @@ export class UIRenderer {
   /**
    * 渲染 UI 元素
    * @param {GameState} gameState - 遊戲狀態
+   * @param {number} combo - 連擊數
+   * @param {boolean} showCombo - 是否顯示連擊
    */
-  render(gameState) {
+  render(gameState, combo = 0, showCombo = false) {
     this.updateScore(gameState.score);
     this.updateLevel(gameState.level);
     this.updateLines(gameState.linesCleared);
     this.updateStatus(gameState.status);
+    this.updateCombo(combo, showCombo);
 
     if (gameState.nextPiece && this.nextPieceCtx) {
       this.renderNextPiece(gameState.nextPiece);
@@ -94,6 +98,22 @@ export class UIRenderer {
         this.statusElement.textContent = '遊戲結束 - 按 空白鍵 重新開始';
         this.statusElement.style.display = 'block';
         break;
+    }
+  }
+
+  /**
+   * 更新連擊顯示
+   * @param {number} combo - 連擊數
+   * @param {boolean} show - 是否顯示
+   */
+  updateCombo(combo, show) {
+    if (!this.comboElement) return;
+
+    if (show && combo > 1) {
+      this.comboElement.textContent = `COMBO ×${combo}`;
+      this.comboElement.style.display = 'block';
+    } else {
+      this.comboElement.style.display = 'none';
     }
   }
 

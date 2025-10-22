@@ -14,11 +14,23 @@ import { Logger } from './Logger.js';
 import { GameStatus, SCORE_TABLE } from '../utils/Constants.js';
 
 export class Game {
-  constructor() {
+  constructor(enableAnimations = true) {
     this.state = new GameState();
     this.logger = new Logger(true, false); // 啟用 console，不啟用 storage
     this.isRunning = false;
     this.lastUpdateTime = 0;
+    this.dropTimer = 0; // 累積下落時間
+    this.lockDelay = 500; // 鎖定延遲（毫秒）
+    this.lockTimer = 0; // 鎖定計時器
+    this.isAtBottom = false; // 是否在底部
+    this.clearedRows = []; // 正在清除的行（用於動畫）
+    this.clearDelay = 400; // 消行動畫延遲（毫秒）
+    this.clearTimer = 0; // 消行計時器
+    this.isClearing = false; // 是否正在消行動畫
+    this.combo = 0; // 連擊數
+    this.comboTimer = 0; // 連擊顯示計時器
+    this.comboDisplayDuration = 2000; // 連擊顯示持續時間
+    this.enableAnimations = enableAnimations; // 是否啟用動畫
   }
 
   /**
@@ -85,12 +97,81 @@ export class Game {
   update(deltaTime) {
     if (this.state.status !== GameStatus.PLAYING) return;
 
-    // 檢查是否需要下落
-    const timeSinceLastDrop = deltaTime;
-    if (timeSinceLastDrop >= this.state.dropSpeed) {
-      this.movePieceDown();
-      this.state.lastDropTime = Date.now();
+    // 處理消行動畫
+    if (this.isClearing) {
+      this.clearTimer += deltaTime;
+
+      if (this.clearTimer >= this.clearDelay) {
+        // 動畫結束，實際清除行
+        this.finishClearLines();
+        this.isClearing = false;
+        this.clearTimer = 0;
+      }
+
+      return; // 消行動畫期間不處理其他邏輯
     }
+
+    // 更新連擊顯示計時器
+    if (this.comboTimer > 0) {
+      this.comboTimer -= deltaTime;
+      if (this.comboTimer <= 0) {
+        this.comboTimer = 0;
+      }
+    }
+
+    // 累積下落時間
+    this.dropTimer += deltaTime;
+
+    // 檢查是否需要自動下落
+    if (this.dropTimer >= this.state.dropSpeed) {
+      this.dropTimer = 0;
+
+      // 嘗試下落
+      const canDrop = this.tryMovePieceDown();
+
+      if (!canDrop) {
+        // 無法下落，進入鎖定延遲狀態
+        this.isAtBottom = true;
+        this.lockTimer = 0;
+      }
+    }
+
+    // 處理鎖定延遲
+    if (this.isAtBottom) {
+      this.lockTimer += deltaTime;
+
+      if (this.lockTimer >= this.lockDelay) {
+        // 鎖定延遲時間到，鎖定方塊
+        this.lockCurrentPiece();
+        this.isAtBottom = false;
+        this.lockTimer = 0;
+      }
+    }
+  }
+
+  /**
+   * 嘗試向下移動方塊（不鎖定）
+   * @returns {boolean} 是否成功移動
+   */
+  tryMovePieceDown() {
+    const testPiece = this.state.currentPiece.clone();
+    testPiece.move(0, 1);
+
+    if (this.canMovePiece(testPiece)) {
+      this.state.currentPiece.move(0, 1);
+      this.logger.logPieceMove('DOWN', {
+        x: this.state.currentPiece.position.x,
+        y: this.state.currentPiece.position.y,
+      });
+
+      // 成功移動，重置鎖定狀態
+      this.isAtBottom = false;
+      this.lockTimer = 0;
+
+      return true;
+    }
+
+    return false;
   }
 
   /**
@@ -130,6 +211,12 @@ export class Game {
         x: this.state.currentPiece.position.x,
         y: this.state.currentPiece.position.y,
       });
+
+      // 重置鎖定計時器（允許在底部調整位置）
+      if (this.isAtBottom) {
+        this.lockTimer = 0;
+      }
+
       return true;
     }
 
@@ -150,6 +237,12 @@ export class Game {
         x: this.state.currentPiece.position.x,
         y: this.state.currentPiece.position.y,
       });
+
+      // 重置鎖定計時器（允許在底部調整位置）
+      if (this.isAtBottom) {
+        this.lockTimer = 0;
+      }
+
       return true;
     }
 
@@ -157,25 +250,20 @@ export class Game {
   }
 
   /**
-   * 向下移動方塊
+   * 向下移動方塊（玩家按下向下鍵）
    * @returns {boolean} 是否成功移動
    */
   movePieceDown() {
-    const testPiece = this.state.currentPiece.clone();
-    testPiece.move(0, 1);
+    const moved = this.tryMovePieceDown();
 
-    if (this.canMovePiece(testPiece)) {
-      this.state.currentPiece.move(0, 1);
-      this.logger.logPieceMove('DOWN', {
-        x: this.state.currentPiece.position.x,
-        y: this.state.currentPiece.position.y,
-      });
-      return true;
+    if (!moved) {
+      // 無法再下移，立即鎖定（不等待延遲）
+      this.lockCurrentPiece();
+      this.isAtBottom = false;
+      this.lockTimer = 0;
     }
 
-    // 無法下移，鎖定方塊
-    this.lockCurrentPiece();
-    return false;
+    return moved;
   }
 
   /**
@@ -195,6 +283,12 @@ export class Game {
           y: this.state.currentPiece.position.y,
         }
       );
+
+      // 重置鎖定計時器（允許在底部旋轉調整）
+      if (this.isAtBottom) {
+        this.lockTimer = 0;
+      }
+
       return true;
     }
 
@@ -234,27 +328,58 @@ export class Game {
   clearLines() {
     const completeRows = this.state.grid.getCompleteRows();
 
-    if (completeRows.length === 0) return;
+    if (completeRows.length === 0) {
+      // 沒有消行，重置連擊
+      this.combo = 0;
+      return;
+    }
+
+    // 記錄要清除的行（用於動畫）
+    this.clearedRows = completeRows;
+
+    // 增加連擊數
+    this.combo++;
+    this.comboTimer = this.comboDisplayDuration;
+
+    if (this.enableAnimations) {
+      // 進入消行動畫狀態
+      this.isClearing = true;
+      this.clearTimer = 0;
+    } else {
+      // 測試模式：直接清除，不使用動畫
+      this.finishClearLines();
+    }
+  }
+
+  /**
+   * 完成清除行（動畫結束後）
+   */
+  finishClearLines() {
+    if (this.clearedRows.length === 0) return;
 
     // 移除完整行
-    this.state.grid.removeRows(completeRows);
+    this.state.grid.removeRows(this.clearedRows);
 
-    // 計算分數（基礎分數 × 等級）
-    const baseScore = SCORE_TABLE[completeRows.length] || 0;
-    const score = baseScore * this.state.level;
+    // 計算分數（基礎分數 × 等級 × 連擊倍率）
+    const baseScore = SCORE_TABLE[this.clearedRows.length] || 0;
+    const comboMultiplier = this.combo > 1 ? 1 + (this.combo - 1) * 0.5 : 1;
+    const score = Math.floor(baseScore * this.state.level * comboMultiplier);
 
     // 更新狀態
     const oldLevel = this.state.level;
     this.state.addScore(score);
-    this.state.addClearedLines(completeRows.length);
+    this.state.addClearedLines(this.clearedRows.length);
 
     // 記錄日誌
-    this.logger.logLineClear(completeRows.length, score);
+    this.logger.logLineClear(this.clearedRows.length, score);
 
     // 檢查是否升級
     if (this.state.level > oldLevel) {
       this.logger.logLevelUp(this.state.level, this.state.dropSpeed);
     }
+
+    // 清空清除行列表
+    this.clearedRows = [];
   }
 
   /**
@@ -277,5 +402,29 @@ export class Game {
    */
   getState() {
     return this.state;
+  }
+
+  /**
+   * 取得連擊數
+   * @returns {number}
+   */
+  getCombo() {
+    return this.combo;
+  }
+
+  /**
+   * 取得正在清除的行
+   * @returns {number[]}
+   */
+  getClearingRows() {
+    return this.isClearing ? this.clearedRows : [];
+  }
+
+  /**
+   * 取得連擊是否應該顯示
+   * @returns {boolean}
+   */
+  shouldShowCombo() {
+    return this.comboTimer > 0 && this.combo > 1;
   }
 }

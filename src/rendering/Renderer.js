@@ -28,13 +28,16 @@ export class Renderer {
   /**
    * 渲染遊戲畫面
    * @param {GameState} gameState - 遊戲狀態
+   * @param {number[]} clearingRows - 正在清除的行（用於動畫）
+   * @param {number} combo - 連擊數
+   * @param {boolean} showCombo - 是否顯示連擊
    */
-  render(gameState) {
+  render(gameState, clearingRows = [], combo = 0, showCombo = false) {
     // 清除畫面
     this.clear();
 
     // 渲染遊戲板
-    this.gridRenderer.render(gameState.grid);
+    this.gridRenderer.render(gameState.grid, clearingRows);
 
     // 渲染當前方塊
     if (gameState.currentPiece) {
@@ -47,7 +50,7 @@ export class Renderer {
     }
 
     // 渲染 UI 元素
-    this.uiRenderer.render(gameState);
+    this.uiRenderer.render(gameState, combo, showCombo);
   }
 
   /**

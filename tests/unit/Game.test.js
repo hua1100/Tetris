@@ -11,7 +11,7 @@ describe('Game', () => {
   let game;
 
   beforeEach(() => {
-    game = new Game();
+    game = new Game(false); // 測試模式：禁用動畫
   });
 
   describe('建構子', () => {

@@ -38,7 +38,12 @@ function gameLoop(currentTime) {
   game.update(deltaTime);
 
   // 渲染畫面
-  renderer.render(game.getState());
+  renderer.render(
+    game.getState(),
+    game.getClearingRows(),
+    game.getCombo(),
+    game.shouldShowCombo()
+  );
 
   // 繼續循環
   if (game.isRunning) {
@@ -144,7 +149,12 @@ if (restartButton) {
 }
 
 // 初始渲染
-renderer.render(game.getState());
+renderer.render(
+  game.getState(),
+  game.getClearingRows(),
+  game.getCombo(),
+  game.shouldShowCombo()
+);
 
 console.log('✅ 遊戲初始化完成');
 console.log('提示：按 空白鍵 或點擊「開始遊戲」按鈕開始遊戲');
