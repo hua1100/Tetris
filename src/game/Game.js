@@ -20,7 +20,7 @@ export class Game {
     this.isRunning = false;
     this.lastUpdateTime = 0;
     this.dropTimer = 0; // 累積下落時間
-    this.lockDelay = 500; // 鎖定延遲（毫秒）
+    this.lockDelay = enableAnimations ? 500 : 0; // 測試模式下禁用鎖定延遲
     this.lockTimer = 0; // 鎖定計時器
     this.isAtBottom = false; // 是否在底部
     this.clearedRows = []; // 正在清除的行（用於動畫）
@@ -97,18 +97,16 @@ export class Game {
   update(deltaTime) {
     if (this.state.status !== GameStatus.PLAYING) return;
 
-    // 處理消行動畫
+    // 更新消行動畫計時器（不阻塞遊戲邏輯）
     if (this.isClearing) {
       this.clearTimer += deltaTime;
 
       if (this.clearTimer >= this.clearDelay) {
-        // 動畫結束，實際清除行
-        this.finishClearLines();
+        // 動畫結束，清除動畫狀態
         this.isClearing = false;
         this.clearTimer = 0;
+        this.clearedRows = [];
       }
-
-      return; // 消行動畫期間不處理其他邏輯
     }
 
     // 更新連擊顯示計時器
@@ -257,10 +255,19 @@ export class Game {
     const moved = this.tryMovePieceDown();
 
     if (!moved) {
-      // 無法再下移，立即鎖定（不等待延遲）
-      this.lockCurrentPiece();
-      this.isAtBottom = false;
-      this.lockTimer = 0;
+      // 無法再下移
+      if (this.lockDelay === 0) {
+        // 測試模式：立即鎖定
+        this.lockCurrentPiece();
+        this.isAtBottom = false;
+        this.lockTimer = 0;
+      } else {
+        // 正常模式：加速進入鎖定狀態（縮短延遲時間到 100ms）
+        if (!this.isAtBottom) {
+          this.isAtBottom = true;
+          this.lockTimer = Math.max(0, this.lockDelay - 100);
+        }
+      }
     }
 
     return moved;
@@ -334,52 +341,41 @@ export class Game {
       return;
     }
 
-    // 記錄要清除的行（用於動畫）
-    this.clearedRows = completeRows;
-
     // 增加連擊數
     this.combo++;
     this.comboTimer = this.comboDisplayDuration;
 
-    if (this.enableAnimations) {
-      // 進入消行動畫狀態
-      this.isClearing = true;
-      this.clearTimer = 0;
-    } else {
-      // 測試模式：直接清除，不使用動畫
-      this.finishClearLines();
-    }
-  }
-
-  /**
-   * 完成清除行（動畫結束後）
-   */
-  finishClearLines() {
-    if (this.clearedRows.length === 0) return;
-
+    // 立即清除行並更新分數（不等待動畫）
     // 移除完整行
-    this.state.grid.removeRows(this.clearedRows);
+    this.state.grid.removeRows(completeRows);
 
     // 計算分數（基礎分數 × 等級 × 連擊倍率）
-    const baseScore = SCORE_TABLE[this.clearedRows.length] || 0;
+    const baseScore = SCORE_TABLE[completeRows.length] || 0;
     const comboMultiplier = this.combo > 1 ? 1 + (this.combo - 1) * 0.5 : 1;
     const score = Math.floor(baseScore * this.state.level * comboMultiplier);
 
     // 更新狀態
     const oldLevel = this.state.level;
     this.state.addScore(score);
-    this.state.addClearedLines(this.clearedRows.length);
+    this.state.addClearedLines(completeRows.length);
 
     // 記錄日誌
-    this.logger.logLineClear(this.clearedRows.length, score);
+    this.logger.logLineClear(completeRows.length, score);
 
     // 檢查是否升級
     if (this.state.level > oldLevel) {
       this.logger.logLevelUp(this.state.level, this.state.dropSpeed);
     }
 
-    // 清空清除行列表
-    this.clearedRows = [];
+    // 如果啟用動畫，觸發短暫的視覺反饋（但不記錄行號，因為已經清除）
+    // 動畫只用於顯示連擊效果
+    if (this.enableAnimations) {
+      this.isClearing = true;
+      this.clearTimer = 0;
+      this.clearedRows = []; // 清空，因為行已經被清除
+      // 縮短動畫時間到 150ms，減少 lag 感
+      this.clearDelay = 150;
+    }
   }
 
   /**
