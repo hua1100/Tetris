@@ -446,23 +446,33 @@ describe('Grid', () => {
       // 移除第 19 行
       grid.removeRow(19);
 
-      // 第 18 行的標記應保持在第 18 行（因為移除的是下方）
-      expect(grid.getCell(5, 18)).toBe('#00FF00');
+      // 移除行後所有行下移，原第 18 行變成第 19 行
+      expect(grid.getCell(5, 19)).toBe('#00FF00');
+      // 頂部應為空行
+      expect(grid.getCell(5, 0)).toBeNull();
     });
 
     test('移除中間行應下移上方所有行', () => {
-      // 第 5 行設定標記
-      grid.setCell(3, 5, '#FF0000');
+      // 第 4 行設定標記（將被下移）
+      grid.setCell(3, 4, '#FF0000');
+      // 第 5 行設定標記（將被移除）
+      grid.setCell(3, 5, '#FFFF00');
       // 第 10 行設定標記
       grid.setCell(7, 10, '#00FF00');
 
       // 移除第 5 行
       grid.removeRow(5);
 
-      // 第 10 行的標記應移至第 9 行
-      expect(grid.getCell(7, 9)).toBe('#00FF00');
-      // 原第 5 行位置應為新資料
-      expect(grid.getCell(3, 5)).toBeNull();
+      // 移除後所有行下移：
+      // - 原第 4 行（'#FF0000'）變成第 5 行
+      expect(grid.getCell(3, 5)).toBe('#FF0000');
+      // - 原第 5 行（'#FFFF00'）被移除，不存在於任何位置
+      // - 原第 6 行（空）保持在第 6 行（splice 後是 5，unshift 後是 6）
+      expect(grid.getCell(3, 6)).toBeNull();
+      // - 原第 10 行保持在第 10 行
+      expect(grid.getCell(7, 10)).toBe('#00FF00');
+      // 頂部應為空行
+      expect(grid.getCell(3, 0)).toBeNull();
     });
 
     test('應忽略邊界外的行號', () => {
@@ -491,8 +501,11 @@ describe('Grid', () => {
 
       grid.removeRows([18, 19]);
 
-      expect(grid.isRowComplete(18)).toBe(false);
-      expect(grid.isRowComplete(19)).toBe(false);
+      // 移除後，原第 18 行內容下移到第 19 行
+      expect(grid.getCell(0, 19)).toBe('#00FF00');
+      // 頂部兩行應為空
+      expect(grid.isRowComplete(0)).toBe(false);
+      expect(grid.isRowComplete(1)).toBe(false);
     });
 
     test('應按從下往上的順序移除（避免索引問題）', () => {
@@ -674,9 +687,13 @@ describe('Grid', () => {
 
       grid.removeRows(completeRows);
 
-      // 底部 4 行應為空
-      for (let row = 16; row < 20; row++) {
+      // 移除 4 行後，頂部 4 行應為空
+      for (let row = 0; row < 4; row++) {
         expect(grid.isRowComplete(row)).toBe(false);
+        // 驗證為空行
+        for (let col = 0; col < 10; col++) {
+          expect(grid.getCell(col, row)).toBeNull();
+        }
       }
     });
 
