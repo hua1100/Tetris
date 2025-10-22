@@ -1,12 +1,42 @@
-# Tetris
+# 俄羅斯方塊 (Tetris)
 
-A classic Tetris game implementation following spec-driven development principles.
+經典俄羅斯方塊遊戲，使用 Vanilla JavaScript 開發。
+
+## 🎮 線上遊玩
+
+遊戲已部署到 GitHub Pages，可直接在瀏覽器中遊玩：
+
+**[立即開始遊戲 →](https://hua1100.github.io/Tetris/)**
 
 ## Project Status
 
-**Current Phase**: Initial Setup
-**Constitution Version**: 1.0.0
+**Current Phase**: Phase 3 (US1) Complete ✅
+**Constitution Version**: 1.1.0
 **Development Branch**: `claude/init-github-spec-011CUKyFp6sMQKe77cfXtCwM`
+**Tests**: 369/369 passing ✅
+
+## ✨ 遊戲特色
+
+- ✅ 七種經典方塊類型（I, O, T, S, Z, J, L）
+- ✅ 幽靈方塊預覽落點
+- ✅ 下一個方塊顯示
+- ✅ 實時分數、等級、消除行數統計
+- ✅ 等級自動提升（每 10 行）
+- ✅ 速度隨等級增加
+- ✅ 經典像素風格界面
+- ✅ 完整的遊戲循環與碰撞檢測
+- ✅ 結構化日誌系統
+
+## 🎯 操作方式
+
+| 按鍵 | 功能 |
+|------|------|
+| ← → | 左右移動方塊 |
+| ↑ / W | 旋轉方塊 |
+| ↓ / S | 加速下落 |
+| 空白鍵 | 硬降（瞬間落底）/ 開始遊戲 |
+| P | 暫停/繼續 |
+| A / D | 左右移動（WASD 替代方案）|
 
 ## Development Approach
 
@@ -45,11 +75,38 @@ This project follows 5 core principles defined in `.specify/memory/constitution.
 4. **Performance by Design** - 60 FPS target, <16ms input latency
 5. **Maintainable Code** - Clear, documented, and consistent code style
 
-## Getting Started
+## 🛠️ 本地開發
 
-### Prerequisites
+### 環境需求
 
-- To be determined based on implementation plan
+- Node.js: v18.0+ （推薦 LTS 版本）
+- npm: v9.0+
+- Git: v2.0+
+
+### 安裝與運行
+
+```bash
+# 克隆倉庫
+git clone https://github.com/hua1100/Tetris.git
+cd Tetris
+
+# 安裝依賴
+npm install
+
+# 啟動開發服務器
+npm run dev
+
+# 構建生產版本
+npm run build
+
+# 運行測試
+npm test
+
+# 代碼檢查
+npm run lint
+```
+
+開發服務器默認運行在 http://localhost:3000/
 
 ### Development Workflow
 
@@ -101,27 +158,62 @@ Contributions must follow the spec-driven development process:
 
 To be determined
 
-## Roadmap
+## 🧪 測試
 
-### Phase 1: Core Game Mechanics (Planned)
-- Game board rendering
-- Tetromino pieces and movement
-- Collision detection
-- Line clearing
-- Scoring system
+項目使用 Jest 進行測試，目前有 **369 個單元測試**，全部通過 ✅
 
-### Phase 2: Enhanced Features (Planned)
-- Next piece preview
-- Hold piece functionality
-- Pause/resume
-- Level progression
+```bash
+npm test                 # 運行所有測試
+npm test -- --watch      # 監視模式
+npm test -- --coverage   # 生成覆蓋率報告
+```
 
-### Phase 3: Polish (Planned)
-- Sound effects and music
-- Ghost piece preview
-- High score persistence
-- Visual themes
+測試覆蓋：
+- ✅ Logger（20 個測試）
+- ✅ Position（79 個測試）
+- ✅ Grid（75 個測試）
+- ✅ Tetromino（145 個測試）
+- ✅ GameState（100 個測試）
+- ✅ Game（50 個測試）
+
+## 🎨 技術棧
+
+- **語言**: Vanilla JavaScript (ES6+)
+- **渲染**: HTML5 Canvas 2D API
+- **構建工具**: Vite
+- **測試框架**: Jest
+- **代碼檢查**: ESLint + Prettier
+- **版本控制**: Git + GitHub
+- **部署**: GitHub Pages + GitHub Actions
+
+## 📊 計分規則
+
+| 消除行數 | 基礎分數 | 實際分數 |
+|---------|---------|---------|
+| 1 行 (Single) | 100 | 100 × 等級 |
+| 2 行 (Double) | 300 | 300 × 等級 |
+| 3 行 (Triple) | 500 | 500 × 等級 |
+| 4 行 (Tetris) | 800 | 800 × 等級 |
+
+**等級提升**：每消除 10 行提升 1 級
+**速度調整**：每級速度加快 10%（最快 50ms）
+
+## 🚀 部署
+
+項目使用 GitHub Actions 自動部署到 GitHub Pages：
+
+1. 推送代碼到 `main` 或 `master` 分支
+2. GitHub Actions 自動構建並部署
+3. 訪問 https://hua1100.github.io/Tetris/ 查看最新版本
+
+## 📝 版本歷史
+
+- **v1.0.0** (2025-10-22) - Phase 3 (US1) 完成
+  - ✅ 核心遊戲邏輯
+  - ✅ 渲染系統
+  - ✅ 輸入處理
+  - ✅ 369 個單元測試
 
 ---
 
-**Note**: This project is in initial setup phase. Game implementation will follow once the first feature specification is created.
+**享受遊戲！** 🎮✨
