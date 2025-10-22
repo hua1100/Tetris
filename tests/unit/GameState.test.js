@@ -55,10 +55,10 @@ describe('GameState', () => {
       expect(state.grid.height).toBe(20);
     });
 
-    test('應初始化下落速度為 1000ms', () => {
+    test('應初始化下落速度為 800ms', () => {
       const state = new GameState();
 
-      expect(state.dropSpeed).toBe(1000);
+      expect(state.dropSpeed).toBe(800);
     });
 
     test('應初始化 lastDropTime 為 0', () => {
@@ -422,26 +422,26 @@ describe('GameState', () => {
       expect(state.level).toBe(2);
     });
 
-    test('消除 1-9 行不應升級', () => {
+    test('消除 1-7 行不應升級', () => {
       const state = new GameState();
 
-      state.addClearedLines(9);
+      state.addClearedLines(7);
 
       expect(state.level).toBe(1);
     });
 
-    test('消除 10 行應升至 2 級', () => {
+    test('消除 8 行應升至 2 級', () => {
       const state = new GameState();
 
-      state.addClearedLines(10);
+      state.addClearedLines(8);
 
       expect(state.level).toBe(2);
     });
 
-    test('消除 20 行應升至 3 級', () => {
+    test('消除 16 行應升至 3 級', () => {
       const state = new GameState();
 
-      state.addClearedLines(20);
+      state.addClearedLines(16);
 
       expect(state.level).toBe(3);
     });
@@ -449,57 +449,57 @@ describe('GameState', () => {
     test('逐步消除應正確升級', () => {
       const state = new GameState();
 
-      state.addClearedLines(5);  // 總計 5
+      state.addClearedLines(4);  // 總計 4
       expect(state.level).toBe(1);
 
-      state.addClearedLines(5);  // 總計 10
+      state.addClearedLines(4);  // 總計 8
       expect(state.level).toBe(2);
 
-      state.addClearedLines(10); // 總計 20
+      state.addClearedLines(8); // 總計 16
       expect(state.level).toBe(3);
     });
   });
 
   describe('updateLevel()', () => {
-    test('0-9 行應為 1 級', () => {
+    test('0-7 行應為 1 級', () => {
       const state = new GameState();
-      state.linesCleared = 9;
+      state.linesCleared = 7;
 
       state.updateLevel();
 
       expect(state.level).toBe(1);
     });
 
-    test('10-19 行應為 2 級', () => {
+    test('8-15 行應為 2 級', () => {
       const state = new GameState();
-      state.linesCleared = 15;
+      state.linesCleared = 12;
 
       state.updateLevel();
 
       expect(state.level).toBe(2);
     });
 
-    test('20-29 行應為 3 級', () => {
+    test('16-23 行應為 3 級', () => {
       const state = new GameState();
-      state.linesCleared = 25;
+      state.linesCleared = 20;
 
       state.updateLevel();
 
       expect(state.level).toBe(3);
     });
 
-    test('100 行應為 11 級', () => {
+    test('100 行應為 13 級', () => {
       const state = new GameState();
       state.linesCleared = 100;
 
       state.updateLevel();
 
-      expect(state.level).toBe(11);
+      expect(state.level).toBe(13);
     });
 
     test('等級提升應更新下落速度', () => {
       const state = new GameState();
-      state.linesCleared = 10;
+      state.linesCleared = 8; // 新配置：每 8 行升級
       const oldSpeed = state.dropSpeed;
 
       state.updateLevel();
@@ -510,83 +510,83 @@ describe('GameState', () => {
 
     test('等級不變時不應更新速度', () => {
       const state = new GameState();
-      state.level = 5;
-      state.linesCleared = 45;
-      state.dropSpeed = 656; // 5 級速度
+      state.level = 6;
+      state.linesCleared = 44; // 新配置：44/8 = 5.5，向下取整 5，加 1 = 6
+      state.dropSpeed = 800 * Math.pow(0.85, 5); // 6 級速度
       const oldSpeed = state.dropSpeed;
 
       state.updateLevel();
 
-      expect(state.level).toBe(5);
+      expect(state.level).toBe(6);
       expect(state.dropSpeed).toBe(oldSpeed);
     });
   });
 
   describe('updateDropSpeed()', () => {
-    test('1 級速度應為 1000ms', () => {
+    test('1 級速度應為 800ms', () => {
       const state = new GameState();
       state.level = 1;
 
       state.updateDropSpeed();
 
-      expect(state.dropSpeed).toBe(1000);
+      expect(state.dropSpeed).toBe(800);
     });
 
-    test('2 級速度應為 1000 * 0.9 = 900ms', () => {
+    test('2 級速度應為 800 * 0.85 = 680ms', () => {
       const state = new GameState();
       state.level = 2;
 
       state.updateDropSpeed();
 
-      expect(state.dropSpeed).toBe(900);
+      expect(state.dropSpeed).toBe(680);
     });
 
-    test('3 級速度應為 1000 * 0.9^2 = 810ms', () => {
+    test('3 級速度應為 800 * 0.85^2 = 578ms', () => {
       const state = new GameState();
       state.level = 3;
 
       state.updateDropSpeed();
 
-      expect(state.dropSpeed).toBe(810);
+      expect(state.dropSpeed).toBeCloseTo(578, 0);
     });
 
-    test('每級遞減 10%', () => {
+    test('每級遞減 15%', () => {
       const state = new GameState();
 
       for (let level = 1; level <= 5; level++) {
         state.level = level;
         state.updateDropSpeed();
 
-        const expected = 1000 * Math.pow(0.9, level - 1);
+        const expected = 800 * Math.pow(0.85, level - 1);
         expect(state.dropSpeed).toBeCloseTo(expected, 0);
       }
     });
 
-    test('速度應有下限 50ms', () => {
+    test('速度應有下限 100ms', () => {
       const state = new GameState();
       state.level = 100; // 極高等級
 
       state.updateDropSpeed();
 
-      expect(state.dropSpeed).toBeGreaterThanOrEqual(50);
+      expect(state.dropSpeed).toBeGreaterThanOrEqual(100);
     });
 
-    test('高等級應達到最低速度 50ms', () => {
+    test('高等級應達到最低速度 100ms', () => {
       const state = new GameState();
       state.level = 50;
 
       state.updateDropSpeed();
 
-      expect(state.dropSpeed).toBe(50);
+      expect(state.dropSpeed).toBe(100);
     });
 
-    test('10 級速度應約為 348ms', () => {
+    test('10 級速度應約為 196ms', () => {
       const state = new GameState();
       state.level = 10;
 
       state.updateDropSpeed();
 
-      const expected = 1000 * Math.pow(0.9, 9);
+      const expected = 800 * Math.pow(0.85, 9);
       expect(state.dropSpeed).toBeCloseTo(expected, 0);
     });
   });
@@ -691,13 +691,13 @@ describe('GameState', () => {
       expect(state.status).toBe(GameStatus.PLAYING);
       expect(state.currentPiece).toBeTruthy();
 
-      // 消除 10 行
-      state.addClearedLines(10);
+      // 消除 8 行（新配置：每 8 行升級）
+      state.addClearedLines(8);
       state.addScore(1000);
 
       expect(state.level).toBe(2);
       expect(state.score).toBe(1000);
-      expect(state.dropSpeed).toBe(900);
+      expect(state.dropSpeed).toBe(680); // 800 * 0.85
     });
 
     test('模擬快速升級到高等級', () => {
@@ -707,7 +707,7 @@ describe('GameState', () => {
       // 快速消除 100 行
       state.addClearedLines(100);
 
-      expect(state.level).toBe(11);
+      expect(state.level).toBe(13); // 100/8 = 12.5, floor(12.5) = 12, 12 + 1 = 13
       expect(state.linesCleared).toBe(100);
       expect(state.dropSpeed).toBeLessThan(500);
     });
@@ -740,7 +740,7 @@ describe('GameState', () => {
       const snapshot = state.getSnapshot();
       expect(snapshot.status).toBe(GameStatus.GAME_OVER);
       expect(snapshot.score).toBe(15000);
-      expect(snapshot.level).toBe(8); // 75 / 10 + 1
+      expect(snapshot.level).toBe(10); // 75 / 8 = 9.375, floor(9.375) + 1 = 10
     });
 
     test('模擬方塊生成週期', () => {
@@ -814,8 +814,8 @@ describe('GameState', () => {
 
       state.updateLevel();
 
-      expect(state.level).toBe(101);
-      expect(state.dropSpeed).toBe(50); // 最低速度
+      expect(state.level).toBe(126); // 1000 / 8 = 125, 125 + 1 = 126
+      expect(state.dropSpeed).toBe(100); // 最低速度
     });
 
     test('應處理零行消除', () => {
@@ -920,18 +920,18 @@ describe('GameState', () => {
   });
 
   describe('等級計算公式驗證', () => {
-    test('每 10 行提升一級的公式', () => {
+    test('每 8 行提升一級的公式', () => {
       const state = new GameState();
 
       const testCases = [
         { lines: 0, expectedLevel: 1 },
-        { lines: 9, expectedLevel: 1 },
-        { lines: 10, expectedLevel: 2 },
-        { lines: 19, expectedLevel: 2 },
-        { lines: 20, expectedLevel: 3 },
-        { lines: 50, expectedLevel: 6 },
-        { lines: 99, expectedLevel: 10 },
-        { lines: 100, expectedLevel: 11 },
+        { lines: 7, expectedLevel: 1 },
+        { lines: 8, expectedLevel: 2 },
+        { lines: 15, expectedLevel: 2 },
+        { lines: 16, expectedLevel: 3 },
+        { lines: 40, expectedLevel: 6 },
+        { lines: 79, expectedLevel: 10 },
+        { lines: 80, expectedLevel: 11 },
       ];
 
       testCases.forEach(({ lines, expectedLevel }) => {
@@ -941,15 +941,15 @@ describe('GameState', () => {
       });
     });
 
-    test('速度遞減公式：1000 * 0.9^(level-1)', () => {
+    test('速度遞減公式：800 * 0.85^(level-1)', () => {
       const state = new GameState();
 
       const testCases = [
-        { level: 1, expectedSpeed: 1000 },
-        { level: 2, expectedSpeed: 900 },
-        { level: 3, expectedSpeed: 810 },
-        { level: 4, expectedSpeed: 729 },
-        { level: 5, expectedSpeed: 656.1 },
+        { level: 1, expectedSpeed: 800 },
+        { level: 2, expectedSpeed: 680 },
+        { level: 3, expectedSpeed: 578 },
+        { level: 4, expectedSpeed: 491.3 },
+        { level: 5, expectedSpeed: 417.605 },
       ];
 
       testCases.forEach(({ level, expectedSpeed }) => {

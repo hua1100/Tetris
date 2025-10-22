@@ -240,12 +240,12 @@ export const GAME_CONSTANTS = Object.freeze({
   BLOCK_SIZE: 30, // 像素
 
   // 下落速度
-  INITIAL_DROP_SPEED: 1000, // 毫秒
-  MIN_DROP_SPEED: 50, // 毫秒
-  SPEED_DECREASE_RATE: 0.9, // 每級快 10%
+  INITIAL_DROP_SPEED: 800, // 毫秒（從 1000 降低到 800）
+  MIN_DROP_SPEED: 100, // 毫秒（從 50 提高到 100，避免太快）
+  SPEED_DECREASE_RATE: 0.85, // 每級快 15%（從 0.9 改為 0.85）
 
   // 等級系統
-  LINES_PER_LEVEL: 10,
+  LINES_PER_LEVEL: 8, // 每 8 行升級（從 10 改為 8，更快升級）
 
   // 效能目標
   TARGET_FPS: 60,

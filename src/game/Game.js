@@ -97,18 +97,6 @@ export class Game {
   update(deltaTime) {
     if (this.state.status !== GameStatus.PLAYING) return;
 
-    // 更新消行動畫計時器（不阻塞遊戲邏輯）
-    if (this.isClearing) {
-      this.clearTimer += deltaTime;
-
-      if (this.clearTimer >= this.clearDelay) {
-        // 動畫結束，清除動畫狀態
-        this.isClearing = false;
-        this.clearTimer = 0;
-        this.clearedRows = [];
-      }
-    }
-
     // 更新連擊顯示計時器
     if (this.comboTimer > 0) {
       this.comboTimer -= deltaTime;
@@ -365,16 +353,6 @@ export class Game {
     // 檢查是否升級
     if (this.state.level > oldLevel) {
       this.logger.logLevelUp(this.state.level, this.state.dropSpeed);
-    }
-
-    // 如果啟用動畫，觸發短暫的視覺反饋（但不記錄行號，因為已經清除）
-    // 動畫只用於顯示連擊效果
-    if (this.enableAnimations) {
-      this.isClearing = true;
-      this.clearTimer = 0;
-      this.clearedRows = []; // 清空，因為行已經被清除
-      // 縮短動畫時間到 150ms，減少 lag 感
-      this.clearDelay = 150;
     }
   }
 

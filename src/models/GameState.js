@@ -23,6 +23,9 @@ export class GameState {
     this.grid = new Grid(10, 20);
     this.dropSpeed = GAME_CONSTANTS.INITIAL_DROP_SPEED; // 下落速度（毫秒）
     this.lastDropTime = 0;
+
+    // 7-bag 隨機系統
+    this.tetrominoBag = []; // 當前袋子
   }
 
   /**
@@ -66,13 +69,33 @@ export class GameState {
   }
 
   /**
-   * 建立隨機方塊
+   * 建立隨機方塊（使用 7-bag 系統）
    * @returns {Tetromino}
    */
   createRandomPiece() {
-    const types = Object.values(TetrominoType);
-    const randomType = types[Math.floor(Math.random() * types.length)];
-    return new Tetromino(randomType);
+    // 如果袋子空了，重新填充並洗牌
+    if (this.tetrominoBag.length === 0) {
+      this.refillBag();
+    }
+
+    // 從袋子中取出一個方塊
+    const type = this.tetrominoBag.pop();
+    return new Tetromino(type);
+  }
+
+  /**
+   * 重新填充袋子（7-bag 系統）
+   * 將所有 7 種方塊放入袋子並隨機打亂
+   */
+  refillBag() {
+    // 將所有 7 種方塊加入袋子
+    this.tetrominoBag = Object.values(TetrominoType);
+
+    // Fisher-Yates 洗牌演算法
+    for (let i = this.tetrominoBag.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [this.tetrominoBag[i], this.tetrominoBag[j]] = [this.tetrominoBag[j], this.tetrominoBag[i]];
+    }
   }
 
   /**
