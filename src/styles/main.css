@@ -56,6 +56,24 @@ body {
   display: block;
 }
 
+.game-status {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.9);
+  color: #00ffff;
+  padding: 20px 40px;
+  border: 3px solid #00ffff;
+  border-radius: 10px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-align: center;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+  pointer-events: none;
+  z-index: 10;
+}
+
 .game-sidebar {
   display: flex;
   flex-direction: column;

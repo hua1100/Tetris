@@ -7,98 +7,145 @@
  * 3. 啟動遊戲循環
  */
 
-// TODO: 在 Phase 3 (US1) 實作完成後，將引入以下模組：
-// import { Game } from './game/Game.js';
-// import { Logger } from './game/Logger.js';
+import { Game } from './game/Game.js';
+import { Renderer } from './rendering/Renderer.js';
+import { GameStatus, KEY_BINDINGS, InputCommand } from './utils/Constants.js';
 
 console.log('俄羅斯方塊遊戲初始化中...');
-console.log('專案結構已建立，準備開始 TDD 開發');
 
 // 取得 Canvas 元素
 const canvas = document.getElementById('game-canvas');
-const ctx = canvas.getContext('2d');
+if (!canvas) {
+  console.error('❌ Canvas 元素未找到');
+  throw new Error('Canvas element not found');
+}
 
-// 取得 UI 元素
-const scoreElement = document.getElementById('score');
-const levelElement = document.getElementById('level');
-const linesElement = document.getElementById('lines');
+// 初始化遊戲和渲染器
+const game = new Game();
+const renderer = new Renderer(canvas);
+
+console.log('✅ Game 和 Renderer 已初始化');
+
+// 遊戲循環
+let lastTime = 0;
+let animationFrameId = null;
+
+function gameLoop(currentTime) {
+  const deltaTime = currentTime - lastTime;
+  lastTime = currentTime;
+
+  // 更新遊戲狀態
+  game.update(deltaTime);
+
+  // 渲染畫面
+  renderer.render(game.getState());
+
+  // 繼續循環
+  if (game.isRunning) {
+    animationFrameId = requestAnimationFrame(gameLoop);
+  }
+}
+
+/**
+ * 開始遊戲循環
+ */
+function startGameLoop() {
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+  }
+
+  lastTime = performance.now();
+  animationFrameId = requestAnimationFrame(gameLoop);
+}
+
+/**
+ * 處理鍵盤輸入
+ * @param {KeyboardEvent} event
+ */
+function handleKeyDown(event) {
+  // 阻止方向鍵和空白鍵的預設行為
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(event.code)) {
+    event.preventDefault();
+  }
+
+  const command = KEY_BINDINGS[event.code];
+  if (!command) return;
+
+  const state = game.getState();
+
+  // 處理指令
+  switch (command) {
+    case InputCommand.MOVE_LEFT:
+      if (state.status === GameStatus.PLAYING) {
+        game.movePieceLeft();
+      }
+      break;
+
+    case InputCommand.MOVE_RIGHT:
+      if (state.status === GameStatus.PLAYING) {
+        game.movePieceRight();
+      }
+      break;
+
+    case InputCommand.MOVE_DOWN:
+      if (state.status === GameStatus.PLAYING) {
+        game.movePieceDown();
+      }
+      break;
+
+    case InputCommand.ROTATE_CW:
+      if (state.status === GameStatus.PLAYING) {
+        game.rotatePiece();
+      }
+      break;
+
+    case InputCommand.HARD_DROP:
+      if (state.status === GameStatus.IDLE || state.status === GameStatus.GAME_OVER) {
+        // 開始或重新開始遊戲
+        game.start();
+        startGameLoop();
+      } else if (state.status === GameStatus.PLAYING) {
+        // 硬降
+        while (game.movePieceDown()) {}
+      }
+      break;
+
+    case InputCommand.PAUSE:
+      if (state.status === GameStatus.PLAYING || state.status === GameStatus.PAUSED) {
+        game.togglePause();
+      }
+      break;
+  }
+}
+
+// 設置鍵盤事件監聽
+document.addEventListener('keydown', handleKeyDown);
+
+// 開始按鈕
 const startButton = document.getElementById('start-button');
 const restartButton = document.getElementById('restart-button');
 
-// 驗證 Canvas 設置
-if (canvas && ctx) {
-  console.log('✅ Canvas 已成功初始化');
-  console.log(`Canvas 尺寸: ${canvas.width}x${canvas.height}`);
-
-  // 繪製測試網格（驗證渲染功能）
-  drawTestGrid(ctx, canvas.width, canvas.height);
-} else {
-  console.error('❌ Canvas 初始化失敗');
-}
-
-// 開始按鈕事件（暫時）
-startButton.addEventListener('click', () => {
-  console.log('開始遊戲按鈕已點擊');
-  console.log('提示：Game 類別將在 Phase 3 (US1) 實作');
-  startButton.style.display = 'none';
-  restartButton.style.display = 'inline-block';
-
-  // TODO: 在 Phase 3 實作後，替換為實際遊戲啟動邏輯
-  // game.start();
-});
-
-// 重新開始按鈕事件（暫時）
-restartButton.addEventListener('click', () => {
-  console.log('重新開始按鈕已點擊');
-  location.reload();
-});
-
-/**
- * 繪製測試網格（驗證 Canvas 渲染功能）
- *
- * @param {CanvasRenderingContext2D} ctx - Canvas 上下文
- * @param {number} width - Canvas 寬度
- * @param {number} height - Canvas 高度
- */
-function drawTestGrid(ctx, width, height) {
-  const blockSize = 30; // 每個方塊 30x30 像素
-  const cols = width / blockSize;  // 10 欄
-  const rows = height / blockSize; // 20 列
-
-  // 清空畫布
-  ctx.fillStyle = '#000000';
-  ctx.fillRect(0, 0, width, height);
-
-  // 繪製網格線
-  ctx.strokeStyle = '#333333';
-  ctx.lineWidth = 1;
-
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) {
-      ctx.strokeRect(
-        col * blockSize,
-        row * blockSize,
-        blockSize,
-        blockSize
-      );
+if (startButton) {
+  startButton.addEventListener('click', () => {
+    game.start();
+    startGameLoop();
+    startButton.style.display = 'none';
+    if (restartButton) {
+      restartButton.style.display = 'inline-block';
     }
-  }
-
-  // 在中央繪製測試方塊（模擬 I 型方塊）
-  ctx.fillStyle = '#00FFFF'; // 青色
-  const centerCol = Math.floor(cols / 2) - 2;
-
-  for (let i = 0; i < 4; i++) {
-    ctx.fillRect(
-      (centerCol + i) * blockSize + 1,
-      blockSize + 1,
-      blockSize - 2,
-      blockSize - 2
-    );
-  }
-
-  console.log('✅ 測試網格已繪製（10x20 網格 + I 型方塊）');
+  });
 }
 
-console.log('✅ Phase 1 (Setup) 完成');
-console.log('下一步：Phase 2 (Foundational) - 建立 Constants.js 和 Logger.js');
+if (restartButton) {
+  restartButton.addEventListener('click', () => {
+    game.start();
+    startGameLoop();
+  });
+}
+
+// 初始渲染
+renderer.render(game.getState());
+
+console.log('✅ 遊戲初始化完成');
+console.log('提示：按 空白鍵 或點擊「開始遊戲」按鈕開始遊戲');
+console.log('操作：← → 移動，↑/W 旋轉，↓/S 加速下落，P 暫停');
