@@ -123,9 +123,22 @@ export class Grid {
    * @param {Array<number>} rows - 要移除的行號陣列
    */
   removeRows(rows) {
-    // 從下往上移除（避免索引變動問題）
-    rows.sort((a, b) => b - a);
-    rows.forEach(row => this.removeRow(row));
+    if (rows.length === 0) return;
+    
+    // 移除重複的行號並排序（從大到小）
+    const uniqueRows = [...new Set(rows)].sort((a, b) => b - a);
+    
+    // 一次性移除所有行
+    uniqueRows.forEach(row => {
+      if (row >= 0 && row < this.height) {
+        this.cells.splice(row, 1);
+      }
+    });
+    
+    // 在頂部添加相應數量的空行
+    for (let i = 0; i < uniqueRows.length; i++) {
+      this.cells.unshift(Array(this.width).fill(null));
+    }
   }
 
   /**
