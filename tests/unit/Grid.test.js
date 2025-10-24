@@ -501,8 +501,10 @@ describe('Grid', () => {
 
       grid.removeRows([18, 19]);
 
-      // 移除後，原第 18 行內容下移到第 19 行
-      expect(grid.getCell(0, 19)).toBe('#00FF00');
+      // 移除第 18 和 19 行後，這兩行都被刪除
+      // 底部應該是空的（因為上面沒有內容可以下移）
+      expect(grid.getCell(0, 18)).toBeNull();
+      expect(grid.getCell(0, 19)).toBeNull();
       // 頂部兩行應為空
       expect(grid.isRowComplete(0)).toBe(false);
       expect(grid.isRowComplete(1)).toBe(false);
@@ -827,6 +829,213 @@ describe('Grid', () => {
       expect(Array.isArray(completeRows)).toBe(true);
       completeRows.forEach(row => {
         expect(typeof row).toBe('number');
+      });
+    });
+  });
+
+  describe('垃圾行系統（對戰模式）', () => {
+    let grid;
+
+    beforeEach(() => {
+      grid = new Grid(10, 20);
+    });
+
+    describe('addGarbageLines()', () => {
+      test('應在底部加入單一垃圾行', () => {
+        grid.addGarbageLines(1);
+
+        // 底部行應該有 9 個垃圾方塊 + 1 個空隙
+        const bottomRow = grid.cells[19];
+        const filledCount = bottomRow.filter(cell => cell === '#808080').length;
+        const emptyCount = bottomRow.filter(cell => cell === null).length;
+
+        expect(filledCount).toBe(9);
+        expect(emptyCount).toBe(1);
+      });
+
+      test('應在底部加入多條垃圾行', () => {
+        grid.addGarbageLines(3);
+
+        // 底部 3 行都應該是垃圾行
+        for (let i = 17; i < 20; i++) {
+          const row = grid.cells[i];
+          const filledCount = row.filter(cell => cell === '#808080').length;
+          expect(filledCount).toBe(9); // 每行 9 個垃圾方塊
+        }
+      });
+
+      test('加入垃圾行應上推現有方塊', () => {
+        // 在底部放置標記方塊
+        grid.setCell(5, 19, '#FF0000');
+
+        grid.addGarbageLines(2);
+
+        // 原本在 y=19 的方塊應被上推到 y=17
+        expect(grid.getCell(5, 17)).toBe('#FF0000');
+        expect(grid.getCell(5, 19)).toBe('#808080'); // 底部變成垃圾
+      });
+
+      test('頂部無空間時應拋出錯誤', () => {
+        // 填滿頂部 3 行
+        for (let y = 0; y < 3; y++) {
+          for (let x = 0; x < 10; x++) {
+            grid.setCell(x, y, '#FF0000');
+          }
+        }
+
+        expect(() => {
+          grid.addGarbageLines(3);
+        }).toThrow();
+      });
+
+      test('應處理最大垃圾行數（4 行）', () => {
+        grid.addGarbageLines(4);
+
+        for (let i = 16; i < 20; i++) {
+          const row = grid.cells[i];
+          const filledCount = row.filter(cell => cell === '#808080').length;
+          expect(filledCount).toBe(9);
+        }
+      });
+
+      test('每條垃圾行的空隙位置應該是隨機的', () => {
+        grid.addGarbageLines(5);
+
+        const gapPositions = [];
+        for (let i = 15; i < 20; i++) {
+          const row = grid.cells[i];
+          const gapIndex = row.findIndex(cell => cell === null);
+          gapPositions.push(gapIndex);
+        }
+
+        // 至少應該有一些不同的空隙位置（非常低概率全部相同）
+        const uniquePositions = new Set(gapPositions);
+        expect(uniquePositions.size).toBeGreaterThan(1);
+      });
+    });
+
+    describe('createGarbageLine()', () => {
+      test('應建立包含 9 個垃圾方塊的行', () => {
+        const garbageLine = grid.createGarbageLine();
+
+        const filledCount = garbageLine.filter(cell => cell === '#808080').length;
+        expect(filledCount).toBe(9);
+      });
+
+      test('應建立包含 1 個空隙的行', () => {
+        const garbageLine = grid.createGarbageLine();
+
+        const emptyCount = garbageLine.filter(cell => cell === null).length;
+        expect(emptyCount).toBe(1);
+      });
+
+      test('應建立長度為 width 的陣列', () => {
+        const garbageLine = grid.createGarbageLine();
+
+        expect(garbageLine).toHaveLength(10);
+      });
+
+      test('空隙位置應在有效範圍內', () => {
+        const garbageLine = grid.createGarbageLine();
+
+        const gapIndex = garbageLine.findIndex(cell => cell === null);
+        expect(gapIndex).toBeGreaterThanOrEqual(0);
+        expect(gapIndex).toBeLessThan(10);
+      });
+    });
+
+    describe('canAddGarbageLines()', () => {
+      test('空白網格應允許加入任意行數', () => {
+        expect(grid.canAddGarbageLines(1)).toBe(true);
+        expect(grid.canAddGarbageLines(5)).toBe(true);
+        expect(grid.canAddGarbageLines(10)).toBe(true);
+      });
+
+      test('頂部有方塊時應禁止加入過多行', () => {
+        // 在 y=5 位置放置方塊
+        grid.setCell(5, 5, '#FF0000');
+
+        // 嘗試加入 6 行（會推到 y=5 以上）
+        expect(grid.canAddGarbageLines(6)).toBe(false);
+      });
+
+      test('頂部完全填滿應禁止加入任何行', () => {
+        // 填滿頂部 1 行
+        for (let x = 0; x < 10; x++) {
+          grid.setCell(x, 0, '#FF0000');
+        }
+
+        expect(grid.canAddGarbageLines(1)).toBe(false);
+      });
+
+      test('底部有方塊但頂部空應允許加入', () => {
+        // 在底部放置方塊
+        for (let x = 0; x < 10; x++) {
+          grid.setCell(x, 19, '#FF0000');
+        }
+
+        expect(grid.canAddGarbageLines(5)).toBe(true);
+      });
+
+      test('應檢查足夠的頂部空間', () => {
+        // 在頂部留 3 行空間，第 4 行有方塊
+        grid.setCell(5, 3, '#FF0000');
+
+        expect(grid.canAddGarbageLines(3)).toBe(true);
+        expect(grid.canAddGarbageLines(4)).toBe(false);
+      });
+    });
+
+    describe('對戰模式整合場景', () => {
+      test('模擬接收 2 行垃圾行攻擊', () => {
+        // 模擬玩家有一些堆疊
+        for (let x = 0; x < 5; x++) {
+          grid.setCell(x, 18, '#FF0000');
+          grid.setCell(x, 19, '#FF0000');
+        }
+
+        // 接收 2 行垃圾
+        grid.addGarbageLines(2);
+
+        // 原本的方塊應上推 2 行
+        expect(grid.getCell(0, 16)).toBe('#FF0000');
+        expect(grid.getCell(0, 17)).toBe('#FF0000');
+
+        // 底部 2 行應該是垃圾（每行有 9 個垃圾方塊 + 1 個空隙）
+        const row18 = grid.cells[18];
+        const row19 = grid.cells[19];
+        const garbage18Count = row18.filter(cell => cell === '#808080').length;
+        const garbage19Count = row19.filter(cell => cell === '#808080').length;
+
+        expect(garbage18Count).toBe(9); // 每行應有 9 個垃圾方塊
+        expect(garbage19Count).toBe(9);
+      });
+
+      test('模擬連續接收垃圾行', () => {
+        grid.addGarbageLines(1);
+        grid.addGarbageLines(1);
+        grid.addGarbageLines(1);
+
+        // 底部 3 行應該是垃圾
+        for (let i = 17; i < 20; i++) {
+          const row = grid.cells[i];
+          const garbageCount = row.filter(cell => cell === '#808080').length;
+          expect(garbageCount).toBe(9);
+        }
+      });
+
+      test('模擬接收垃圾導致遊戲結束', () => {
+        // 堆疊到接近頂部
+        for (let y = 5; y < 20; y++) {
+          for (let x = 0; x < 10; x++) {
+            grid.setCell(x, y, '#FF0000');
+          }
+        }
+
+        // 嘗試加入 6 行垃圾（會超出頂部）
+        expect(() => {
+          grid.addGarbageLines(6);
+        }).toThrow();
       });
     });
   });

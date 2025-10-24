@@ -12,12 +12,28 @@
       <h1>俄羅斯方塊</h1>
     </div>
 
-    <div class="game-content">
+    <!-- 模式選擇畫面 -->
+    <div id="mode-selection" class="mode-selection">
+      <h2>選擇遊戲模式</h2>
+      <button id="single-player-btn" class="btn-mode">單人模式</button>
+      <button id="battle-mode-btn" class="btn-mode">雙人對戰</button>
+    </div>
+
+    <div class="game-content" style="display: none;">
       <!-- 主遊戲區域 -->
       <div class="game-main">
         <canvas id="game-canvas" width="300" height="600"></canvas>
         <div id="status" class="game-status">按 空白鍵 開始</div>
         <div id="combo" class="combo-display" style="display: none;">COMBO x2</div>
+
+        <!-- 對戰模式控制說明 -->
+        <div id="battle-controls-overlay" style="display: none; margin-top: 10px; text-align: center; color: #fff; font-size: 12px;">
+          <span style="color: #00FFFF; font-weight: bold;">Player 1:</span> W=旋轉 A=左 S=下 D=右 Space=硬降
+          <span style="margin: 0 20px;">|</span>
+          <span style="color: #FF00FF; font-weight: bold;">Player 2:</span> ↑=旋轉 ←=左 ↓=下 →=右 Enter=硬降
+          <span style="margin: 0 20px;">|</span>
+          <span style="color: #FFFF00; font-weight: bold;">共用:</span> P 鍵暫停
+        </div>
       </div>
 
       <!-- 側邊欄（分數、下一個方塊等） -->
@@ -44,11 +60,25 @@
 
         <div class="info-panel controls">
           <h2>操作說明</h2>
-          <p>← → : 左右移動</p>
-          <p>↑ / W : 旋轉</p>
-          <p>↓ / S : 加速下落</p>
-          <p>空白鍵 : 硬降</p>
-          <p>P : 暫停</p>
+          <div id="single-player-controls">
+            <p><strong>單人模式：</strong></p>
+            <p>← → : 左右移動</p>
+            <p>↑ / W : 旋轉</p>
+            <p>↓ / S : 加速下落</p>
+            <p>空白鍵 : 硬降</p>
+            <p>P : 暫停</p>
+          </div>
+          <div id="battle-controls" style="display: none;">
+            <p><strong>玩家 1 (左側)：</strong></p>
+            <p>W : 旋轉 | A : 左移 | S : 下移 | D : 右移</p>
+            <p>空白鍵 : 硬降</p>
+            <hr style="margin: 10px 0; border-color: #444;">
+            <p><strong>玩家 2 (右側)：</strong></p>
+            <p>↑ : 旋轉 | ← : 左移 | ↓ : 下移 | → : 右移</p>
+            <p>Enter : 硬降</p>
+            <hr style="margin: 10px 0; border-color: #444;">
+            <p><strong>共用：</strong>P 鍵暫停</p>
+          </div>
         </div>
       </div>
     </div>

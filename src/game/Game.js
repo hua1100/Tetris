@@ -31,6 +31,7 @@ export class Game {
     this.comboTimer = 0; // 連擊顯示計時器
     this.comboDisplayDuration = 2000; // 連擊顯示持續時間
     this.enableAnimations = enableAnimations; // 是否啟用動畫
+    this.lastClearedLines = 0; // 最後消除的行數（用於對戰模式攻擊資訊）
   }
 
   /**
@@ -326,8 +327,12 @@ export class Game {
     if (completeRows.length === 0) {
       // 沒有消行，重置連擊
       this.combo = 0;
+      this.lastClearedLines = 0; // 記錄消行數為 0
       return;
     }
+
+    // 記錄消行數（用於對戰模式攻擊）
+    this.lastClearedLines = completeRows.length;
 
     // 增加連擊數
     this.combo++;
@@ -400,5 +405,28 @@ export class Game {
    */
   shouldShowCombo() {
     return this.comboTimer > 0 && this.combo > 1;
+  }
+
+  // ============================================================================
+  // 對戰模式 API
+  // ============================================================================
+
+  /**
+   * 取得最後消除的行數（用於對戰模式攻擊計算）
+   * 讀取後會重置為 0（消費模式）
+   * @returns {number} 消除的行數
+   */
+  getLastClearedLines() {
+    const result = this.lastClearedLines || 0;
+    this.lastClearedLines = 0; // 重置
+    return result;
+  }
+
+  /**
+   * 加入垃圾行到底部（對戰模式接收攻擊）
+   * @param {number} count - 垃圾行數量
+   */
+  addGarbageLines(count) {
+    this.state.grid.addGarbageLines(count);
   }
 }

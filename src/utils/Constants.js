@@ -326,3 +326,65 @@ export const GameEvent = Object.freeze({
   LEVEL_UP: 'LEVEL_UP',
   INPUT_LAG: 'INPUT_LAG',
 });
+
+// ============================================================================
+// 對戰模式常數（Battle Mode）
+// ============================================================================
+
+// 遊戲模式枚舉
+export const GameMode = Object.freeze({
+  SINGLE_PLAYER: 'SINGLE_PLAYER',
+  BATTLE: 'BATTLE',
+});
+
+// 垃圾行顏色
+export const GARBAGE_COLOR = '#808080'; // 灰色
+
+// 攻擊表（消行數 → 垃圾行數）
+export const ATTACK_TABLE = Object.freeze({
+  1: 0,  // 消 1 行不攻擊
+  2: 1,  // 消 2 行送 1 行垃圾
+  3: 2,  // 消 3 行送 2 行垃圾
+  4: 4,  // 消 4 行送 4 行垃圾（Tetris）
+});
+
+// 連擊加成表
+export const COMBO_BONUS = Object.freeze({
+  1: 0,  // 無連擊
+  2: 1,  // 2 連擊 +1 行
+  3: 2,  // 3 連擊 +2 行
+  // 4 以上統一 +3
+});
+
+/**
+ * 取得連擊加成
+ * @param {number} combo - 連擊數
+ * @returns {number} 加成的垃圾行數
+ */
+export function getComboBonus(combo) {
+  return combo >= 4 ? 3 : (COMBO_BONUS[combo] || 0);
+}
+
+// 玩家 1 按鍵映射（WASD + Space）
+export const PLAYER1_KEY_BINDINGS = Object.freeze({
+  KeyW: InputCommand.ROTATE_CW,
+  KeyA: InputCommand.MOVE_LEFT,
+  KeyS: InputCommand.MOVE_DOWN,
+  KeyD: InputCommand.MOVE_RIGHT,
+  Space: InputCommand.HARD_DROP,
+});
+
+// 玩家 2 按鍵映射（方向鍵 + Enter）
+export const PLAYER2_KEY_BINDINGS = Object.freeze({
+  ArrowUp: InputCommand.ROTATE_CW,
+  ArrowLeft: InputCommand.MOVE_LEFT,
+  ArrowDown: InputCommand.MOVE_DOWN,
+  ArrowRight: InputCommand.MOVE_RIGHT,
+  Enter: InputCommand.HARD_DROP,
+});
+
+// 暫停鍵（共用）
+export const PAUSE_KEY = 'KeyP';
+
+// 攻擊隊列最大長度
+export const MAX_ATTACK_QUEUE_LENGTH = 20;

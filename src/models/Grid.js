@@ -5,7 +5,10 @@
  * - 記錄固定方塊的位置與顏色
  * - 檢測碰撞與邊界
  * - 消除完整的行
+ * - 管理垃圾行（對戰模式）
  */
+
+import { GARBAGE_COLOR } from '../utils/Constants.js';
 
 export class Grid {
   /**
@@ -156,5 +159,58 @@ export class Grid {
     const cloned = new Grid(this.width, this.height);
     cloned.cells = this.cells.map(row => [...row]);
     return cloned;
+  }
+
+  // ============================================================================
+  // 垃圾行系統（對戰模式）
+  // ============================================================================
+
+  /**
+   * 建立一行垃圾行（9 個垃圾方塊 + 1 個隨機空隙）
+   * @returns {Array<string|null>} 垃圾行陣列
+   */
+  createGarbageLine() {
+    const line = Array(this.width).fill(GARBAGE_COLOR);
+    const gapPosition = Math.floor(Math.random() * this.width);
+    line[gapPosition] = null;
+    return line;
+  }
+
+  /**
+   * 檢查是否能加入指定數量的垃圾行
+   * @param {number} count - 垃圾行數量
+   * @returns {boolean} 是否能加入
+   */
+  canAddGarbageLines(count) {
+    // 檢查頂部是否有足夠空間
+    for (let row = 0; row < count && row < this.height; row++) {
+      if (this.cells[row].some(cell => cell !== null)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * 在底部加入垃圾行（對戰模式攻擊）
+   * @param {number} count - 垃圾行數量
+   * @throws {Error} 如果頂部無足夠空間
+   */
+  addGarbageLines(count) {
+    if (count <= 0) return;
+
+    // 檢查空間
+    if (!this.canAddGarbageLines(count)) {
+      throw new Error(`Grid overflow - cannot add ${count} garbage lines`);
+    }
+
+    // 移除頂部的空行
+    this.cells.splice(0, count);
+
+    // 在底部加入垃圾行
+    for (let i = 0; i < count; i++) {
+      const garbageLine = this.createGarbageLine();
+      this.cells.push(garbageLine);
+    }
   }
 }

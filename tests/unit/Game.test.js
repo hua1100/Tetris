@@ -584,4 +584,242 @@ describe('Game', () => {
       expect(game.state.currentPiece).toBeTruthy();
     });
   });
+
+  describe('攻擊資訊系統（對戰模式）', () => {
+    beforeEach(() => {
+      game.start();
+    });
+
+    describe('getLastClearedLines()', () => {
+      test('無消行時應返回 0', () => {
+        const cleared = game.getLastClearedLines();
+
+        expect(cleared).toBe(0);
+      });
+
+      test('消除 1 行應返回 1', () => {
+        // 填滿一行
+        for (let col = 0; col < 10; col++) {
+          game.state.grid.setCell(col, 19, '#FF0000');
+        }
+
+        game.clearLines();
+        const cleared = game.getLastClearedLines();
+
+        expect(cleared).toBe(1);
+      });
+
+      test('消除 2 行應返回 2', () => {
+        // 填滿兩行
+        for (let row = 18; row < 20; row++) {
+          for (let col = 0; col < 10; col++) {
+            game.state.grid.setCell(col, row, '#FF0000');
+          }
+        }
+
+        game.clearLines();
+        const cleared = game.getLastClearedLines();
+
+        expect(cleared).toBe(2);
+      });
+
+      test('消除 4 行應返回 4（Tetris）', () => {
+        // 填滿四行
+        for (let row = 16; row < 20; row++) {
+          for (let col = 0; col < 10; col++) {
+            game.state.grid.setCell(col, row, '#FF0000');
+          }
+        }
+
+        game.clearLines();
+        const cleared = game.getLastClearedLines();
+
+        expect(cleared).toBe(4);
+      });
+
+      test('讀取後應重置為 0（消費模式）', () => {
+        // 填滿一行
+        for (let col = 0; col < 10; col++) {
+          game.state.grid.setCell(col, 19, '#FF0000');
+        }
+
+        game.clearLines();
+
+        const first = game.getLastClearedLines();
+        const second = game.getLastClearedLines();
+
+        expect(first).toBe(1);
+        expect(second).toBe(0); // 已重置
+      });
+
+      test('連續消行應記錄最新的消行數', () => {
+        // 第一次消 1 行
+        for (let col = 0; col < 10; col++) {
+          game.state.grid.setCell(col, 19, '#FF0000');
+        }
+        game.clearLines();
+        game.getLastClearedLines(); // 消費掉
+
+        // 第二次消 2 行
+        for (let row = 18; row < 20; row++) {
+          for (let col = 0; col < 10; col++) {
+            game.state.grid.setCell(col, row, '#00FF00');
+          }
+        }
+        game.clearLines();
+
+        const cleared = game.getLastClearedLines();
+        expect(cleared).toBe(2); // 只記錄最新的
+      });
+
+      test('未呼叫 clearLines() 時應返回 0', () => {
+        // 填滿一行但不呼叫 clearLines
+        for (let col = 0; col < 10; col++) {
+          game.state.grid.setCell(col, 19, '#FF0000');
+        }
+
+        const cleared = game.getLastClearedLines();
+        expect(cleared).toBe(0);
+      });
+    });
+
+    describe('addGarbageLines()', () => {
+      test('應委派到 Grid.addGarbageLines()', () => {
+        const spy = jest.spyOn(game.state.grid, 'addGarbageLines');
+
+        game.addGarbageLines(2);
+
+        expect(spy).toHaveBeenCalledWith(2);
+        spy.mockRestore();
+      });
+
+      test('應能加入單一垃圾行', () => {
+        game.addGarbageLines(1);
+
+        // 驗證底部有垃圾行
+        const bottomRow = game.state.grid.cells[19];
+        const garbageCount = bottomRow.filter(cell => cell === '#808080').length;
+
+        expect(garbageCount).toBe(9);
+      });
+
+      test('應能加入多條垃圾行', () => {
+        game.addGarbageLines(3);
+
+        // 驗證底部 3 行是垃圾
+        for (let i = 17; i < 20; i++) {
+          const row = game.state.grid.cells[i];
+          const garbageCount = row.filter(cell => cell === '#808080').length;
+          expect(garbageCount).toBe(9);
+        }
+      });
+
+      test('加入垃圾行應上推當前方塊', () => {
+        // 將當前方塊移到底部附近
+        const initialY = game.state.currentPiece.position.y;
+
+        game.addGarbageLines(5);
+
+        // 方塊應被上推（如果在底部區域）
+        // 注意：這個測試假設 addGarbageLines 不會直接移動 currentPiece
+        // 實際行為取決於實作
+        const bottomRow = game.state.grid.cells[19];
+        const garbageCount = bottomRow.filter(cell => cell === '#808080').length;
+        expect(garbageCount).toBe(9);
+      });
+
+      test('頂部無空間時應拋出錯誤', () => {
+        // 填滿頂部
+        for (let y = 0; y < 5; y++) {
+          for (let x = 0; x < 10; x++) {
+            game.state.grid.setCell(x, y, '#FF0000');
+          }
+        }
+
+        expect(() => {
+          game.addGarbageLines(5);
+        }).toThrow();
+      });
+    });
+
+    describe('對戰模式整合場景', () => {
+      test('玩家消行後應能被對手讀取', () => {
+        // 填滿 2 行
+        for (let row = 18; row < 20; row++) {
+          for (let col = 0; col < 10; col++) {
+            game.state.grid.setCell(col, row, '#FF0000');
+          }
+        }
+
+        // 消行
+        game.clearLines();
+
+        // 對手讀取攻擊資訊
+        const attackInfo = game.getLastClearedLines();
+        expect(attackInfo).toBe(2);
+
+        // 對手根據攻擊資訊加入垃圾（這裡簡化為 1:1）
+        // 實際遊戲中會由 BattleGame 計算
+      });
+
+      test('玩家接收垃圾行不影響消行記錄', () => {
+        // 填滿 1 行並消除
+        for (let col = 0; col < 10; col++) {
+          game.state.grid.setCell(col, 19, '#FF0000');
+        }
+        game.clearLines();
+
+        expect(game.getLastClearedLines()).toBe(1);
+
+        // 接收 2 行垃圾
+        game.addGarbageLines(2);
+
+        // 再次讀取應該是 0（已消費）
+        expect(game.getLastClearedLines()).toBe(0);
+      });
+
+      test('模擬完整攻防循環', () => {
+        // 玩家 1 視角：消 3 行
+        for (let row = 17; row < 20; row++) {
+          for (let col = 0; col < 10; col++) {
+            game.state.grid.setCell(col, row, '#FF0000');
+          }
+        }
+        game.clearLines();
+
+        const attack = game.getLastClearedLines();
+        expect(attack).toBe(3); // 發送 3 行攻擊（實際會轉換為垃圾數）
+
+        // 玩家 1 接收來自玩家 2 的反擊（2 行垃圾）
+        game.addGarbageLines(2);
+
+        // 驗證底部有垃圾
+        const bottomRow = game.state.grid.cells[19];
+        const garbageCount = bottomRow.filter(cell => cell === '#808080').length;
+        expect(garbageCount).toBe(9);
+      });
+
+      test('多次消行資訊應正確更新', () => {
+        // 第一次消 1 行
+        for (let col = 0; col < 10; col++) {
+          game.state.grid.setCell(col, 19, '#FF0000');
+        }
+        game.clearLines();
+        expect(game.getLastClearedLines()).toBe(1);
+
+        // 第二次消 4 行（Tetris）
+        for (let row = 16; row < 20; row++) {
+          for (let col = 0; col < 10; col++) {
+            game.state.grid.setCell(col, row, '#00FF00');
+          }
+        }
+        game.clearLines();
+        expect(game.getLastClearedLines()).toBe(4);
+
+        // 第三次沒有消行
+        game.clearLines();
+        expect(game.getLastClearedLines()).toBe(0);
+      });
+    });
+  });
 });

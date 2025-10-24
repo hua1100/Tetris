@@ -4,9 +4,10 @@
  * 職責：
  * - 渲染遊戲板網格
  * - 渲染已固定的方塊
+ * - 渲染垃圾方塊（對戰模式）
  */
 
-import { GAME_CONSTANTS } from '../utils/Constants.js';
+import { GAME_CONSTANTS, GARBAGE_COLOR } from '../utils/Constants.js';
 
 export class GridRenderer {
   /**
@@ -90,17 +91,29 @@ export class GridRenderer {
     const x = col * this.blockSize;
     const y = row * this.blockSize;
 
+    // 檢查是否為垃圾方塊
+    const isGarbage = color === GARBAGE_COLOR;
+
     // 填充顏色
     this.ctx.fillStyle = color;
     this.ctx.fillRect(x + 1, y + 1, this.blockSize - 2, this.blockSize - 2);
 
-    // 繪製高光效果
-    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-    this.ctx.fillRect(x + 1, y + 1, this.blockSize - 2, 4);
+    if (isGarbage) {
+      // 垃圾方塊特殊視覺效果：斜紋圖案
+      this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+      this.ctx.lineWidth = 1;
+      this.ctx.beginPath();
+      this.ctx.moveTo(x + 1, y + this.blockSize - 1);
+      this.ctx.lineTo(x + this.blockSize - 1, y + 1);
+      this.ctx.stroke();
+    } else {
+      // 普通方塊：高光和陰影效果
+      this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      this.ctx.fillRect(x + 1, y + 1, this.blockSize - 2, 4);
 
-    // 繪製陰影效果
-    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-    this.ctx.fillRect(x + 1, y + this.blockSize - 5, this.blockSize - 2, 4);
+      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+      this.ctx.fillRect(x + 1, y + this.blockSize - 5, this.blockSize - 2, 4);
+    }
   }
 
   /**
